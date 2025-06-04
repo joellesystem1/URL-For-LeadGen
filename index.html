@@ -994,108 +994,69 @@
             
             console.log('Analyzing URL for headlines:', { path, pathSegments, urlText });
             
-            // Generate contextual headlines based on URL content
+            // Extract main keyword from URL (look for primary topic words)
+            let mainKeyword = '';
+            
+            // First, look for specific product/service names in the URL
+            const urlParts = urlText.replace(/[^a-z0-9\s\-]/g, ' ').split(/[\s\-]+/);
+            
+            // Look for specific keywords that are likely main topics
+            const specificKeywords = [
+                'ozempic', 'dental', 'implants', 'loan', 'mortgage', 'insurance', 'medicare',
+                'investment', 'trading', 'crypto', 'bitcoin', 'refinance', 'attorney',
+                'lawyer', 'mesothelioma', 'asbestos', 'rehab', 'addiction', 'therapy',
+                'solar', 'roofing', 'windows', 'hvac', 'plumbing', 'electrician',
+                'weight', 'diabetes', 'cancer', 'surgery', 'treatment', 'medication',
+                'education', 'degree', 'college', 'university', 'certification',
+                'seniors', 'medicare', 'retirement', 'disability', 'benefits'
+            ];
+            
+            // Find the most specific keyword in the URL
+            for (let keyword of specificKeywords) {
+                if (urlParts.includes(keyword)) {
+                    mainKeyword = keyword;
+                    break;
+                }
+            }
+            
+            // If no specific keyword found, look for meaningful words in path segments
+            if (!mainKeyword) {
+                for (let segment of pathSegments) {
+                    const cleaned = segment.replace(/-en-us$/, '').replace(/understanding|role|challenges|guide|tips|how|what|best|top|cheap/g, '');
+                    const words = cleaned.split('-').filter(word => word.length > 3);
+                    
+                    // Look for substantive words (not common filler words)
+                    for (let word of words) {
+                        if (!['health', 'finance', 'general', 'about', 'services', 'help', 'info', 'page'].includes(word)) {
+                            mainKeyword = word;
+                            break;
+                        }
+                    }
+                    if (mainKeyword) break;
+                }
+            }
+            
+            console.log('Extracted main keyword:', mainKeyword);
+            
+            // Generate headlines using the main keyword
             const headlines = [];
             
-            // Disability/Accessibility themed
-            if (urlText.includes('disability') || urlText.includes('empowerment') || urlText.includes('accessible')) {
-                headlines.push(
-                    'Find comprehensive disability resources and support',
-                    'Empower your journey with disability assistance programs',
-                    'Access essential disability services and resources today'
-                );
-            }
-            // Financial/Loan themed  
-            else if (urlText.includes('loan') || urlText.includes('finance') || urlText.includes('credit') || urlText.includes('debt')) {
-                headlines.push(
-                    'Get instant approval for personal loans online',
-                    'Access same day funding with bad credit options',
-                    'Compare top rated personal loan offers today'
-                );
-            }
-            // Insurance themed
-            else if (urlText.includes('insurance') || urlText.includes('coverage') || urlText.includes('protect')) {
-                headlines.push(
-                    'Compare insurance quotes and save up to 40%',
-                    'Get instant insurance coverage in minutes',
-                    'Find affordable insurance plans that fit your budget'
-                );
-            }
-            // Investment/Trading themed
-            else if (urlText.includes('invest') || urlText.includes('trading') || urlText.includes('stock') || urlText.includes('fund')) {
-                headlines.push(
-                    'Start investing with zero commission trades',
-                    'Build wealth with expert investment guidance',
-                    'Get professional investment advice and grow your portfolio'
-                );
-            }
-            // Education themed
-            else if (urlText.includes('education') || urlText.includes('degree') || urlText.includes('course') || urlText.includes('learn')) {
-                headlines.push(
-                    'Earn your degree online with flexible schedules',
-                    'Advance your career with accredited online programs',
-                    'Get financial aid for online education and training'
-                );
-            }
-            // Health/Medical themed
-            else if (urlText.includes('health') || urlText.includes('medical') || urlText.includes('doctor') || urlText.includes('treatment')) {
-                headlines.push(
-                    'Find top-rated medical professionals near you',
-                    'Get expert health advice and treatment options',
-                    'Access affordable healthcare services in your area'
-                );
-            }
-            // Legal themed
-            else if (urlText.includes('legal') || urlText.includes('lawyer') || urlText.includes('attorney') || urlText.includes('law')) {
-                headlines.push(
-                    'Get expert legal advice from qualified attorneys',
-                    'Find experienced lawyers for your legal needs',
-                    'Access affordable legal services and consultations'
-                );
-            }
-            // Senior/Aging themed
-            else if (urlText.includes('senior') || urlText.includes('aging') || urlText.includes('elderly') || urlText.includes('retirement')) {
-                headlines.push(
-                    'Discover senior resources and support services',
-                    'Find comprehensive aging care and assistance programs',
-                    'Access senior benefits and retirement planning help'
-                );
-            }
-            // Real Estate themed
-            else if (urlText.includes('home') || urlText.includes('house') || urlText.includes('property') || urlText.includes('real-estate')) {
-                headlines.push(
-                    'Find your dream home with expert real estate help',
-                    'Get the best deals on homes in your area',
-                    'Access top-rated real estate agents and services'
-                );
-            }
-            // Try to extract specific topics from path segments
-            else {
-                // Look for meaningful words in the URL path
-                const topicWords = [];
-                pathSegments.forEach(segment => {
-                    // Clean up segment (remove common URL patterns)
-                    const cleaned = segment.replace(/-en-us$/, '').replace(/-/g, ' ');
-                    if (cleaned.length > 3 && !['general', 'www', 'com', 'org', 'net'].includes(cleaned)) {
-                        topicWords.push(cleaned);
-                    }
-                });
+            if (mainKeyword) {
+                // Always include the main keyword in headlines
+                const capitalizedKeyword = mainKeyword.charAt(0).toUpperCase() + mainKeyword.slice(1);
                 
-                if (topicWords.length > 0) {
-                    const mainTopic = topicWords[topicWords.length - 1]; // Usually the most specific topic
-                    headlines.push(
-                        `Discover comprehensive ${mainTopic} resources and solutions`,
-                        `Get expert ${mainTopic} advice and assistance today`,
-                        `Find top-rated ${mainTopic} services in your area`
-                    );
-                } else {
-                    // Generic fallback headlines
-                    headlines.push(
-                        'Discover amazing deals and exclusive offers',
-                        'Get expert solutions for your needs today',
-                        'Find the perfect match for your requirements'
-                    );
-                }
+                headlines.push(
+                    `${capitalizedKeyword} Options Available`,
+                    `Get ${capitalizedKeyword} Help`,
+                    `${capitalizedKeyword} Solutions Here`
+                );
+            } else {
+                // Fallback headlines if no keyword found
+                headlines.push(
+                    'Solutions Available Here',
+                    'Get Expert Help',
+                    'Options Available'
+                );
             }
             
             console.log('Generated headlines:', headlines);
