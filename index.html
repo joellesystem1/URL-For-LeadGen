@@ -1,0 +1,1202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URL Generator for LeadGen</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            color: #ffffff;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+            font-weight: 700;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .form-section {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 25px;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .form-section h3 {
+            margin-bottom: 20px;
+            color: #64ffda;
+            font-size: 1.3rem;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #e0e0e0;
+        }
+
+        input[type="text"], input[type="url"], input[type="file"], select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        input[type="text"]:focus, input[type="url"]:focus, select:focus {
+            outline: none;
+            border-color: #64ffda;
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 0 20px rgba(100, 255, 218, 0.3);
+        }
+
+        input::placeholder {
+            color: #b0b0b0;
+        }
+
+        select option {
+            background: #1e3c72;
+            color: #ffffff;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #64ffda, #4fc3f7);
+            color: #1e3c72;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 16px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(100, 255, 218, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-analyze {
+            width: 100%;
+            margin-bottom: 20px;
+            background: linear-gradient(45deg, #ff6b6b, #ffa726);
+        }
+
+        .btn-analyze:hover {
+            box-shadow: 0 10px 25px rgba(255, 107, 107, 0.4);
+        }
+
+        .btn-keywords {
+            width: 100%;
+            background: linear-gradient(45deg, #9c27b0, #e91e63);
+            margin-bottom: 15px;
+        }
+
+        .btn-keywords:hover {
+            box-shadow: 0 10px 25px rgba(156, 39, 176, 0.4);
+        }
+
+        .file-upload {
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+            padding: 20px;
+            text-align: center;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .file-upload:hover {
+            border-color: #64ffda;
+            background: rgba(100, 255, 218, 0.05);
+        }
+
+        .file-upload.dragover {
+            border-color: #64ffda;
+            background: rgba(100, 255, 218, 0.1);
+        }
+
+        .headline-suggestions, .keyword-suggestions {
+            margin-bottom: 20px;
+        }
+
+        .suggestion-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 10px;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .suggestion-item:hover {
+            border-color: #64ffda;
+            background: rgba(100, 255, 218, 0.1);
+        }
+
+        .suggestion-item.selected {
+            border-color: #64ffda;
+            background: rgba(100, 255, 218, 0.2);
+        }
+
+        .suggestion-item.selected::after {
+            content: '✓';
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #64ffda;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .keyword-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+        }
+
+        .keyword-stats {
+            color: #64ffda;
+            font-weight: bold;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #64ffda;
+        }
+
+        .spinner {
+            border: 3px solid rgba(100, 255, 218, 0.3);
+            border-top: 3px solid #64ffda;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .output-section {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 25px;
+            border-radius: 15px;
+            margin-top: 30px;
+        }
+
+        .output-section h3 {
+            color: #64ffda;
+            margin-bottom: 15px;
+        }
+
+        .generated-url {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            word-break: break-all;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            margin-bottom: 15px;
+        }
+
+        .copy-btn {
+            background: linear-gradient(45deg, #4caf50, #66bb6a);
+        }
+
+        .copy-btn:hover {
+            box-shadow: 0 10px 25px rgba(76, 175, 80, 0.4);
+        }
+
+        .reset-btn {
+            background: linear-gradient(45deg, #f44336, #ef5350);
+            margin-left: 10px;
+        }
+
+        .reset-btn:hover {
+            box-shadow: 0 10px 25px rgba(244, 67, 54, 0.4);
+        }
+
+        .csv-status {
+            background: rgba(76, 175, 80, 0.2);
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 4px solid #4caf50;
+        }
+
+        .performance-selector {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .performance-btn {
+            padding: 8px 12px;
+            font-size: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .performance-btn.active {
+            background: linear-gradient(45deg, #9c27b0, #e91e63);
+            border-color: #9c27b0;
+        }
+
+        .search-tabs {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 5px;
+            margin-bottom: 15px;
+        }
+
+        .search-tab {
+            padding: 8px 12px;
+            font-size: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .search-tab.active {
+            background: linear-gradient(45deg, #64ffda, #4fc3f7);
+            border-color: #64ffda;
+            color: #1e3c72;
+        }
+
+        .search-result-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 12px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .search-result-item:hover {
+            border-color: #64ffda;
+            background: rgba(100, 255, 218, 0.1);
+        }
+
+        .search-result-item.selected {
+            border-color: #64ffda;
+            background: rgba(100, 255, 218, 0.2);
+        }
+
+        .search-keyword {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .search-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            font-size: 12px;
+        }
+
+        .search-stat {
+            text-align: center;
+            padding: 4px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
+        }
+
+        .search-stat-value {
+            display: block;
+            font-weight: bold;
+            color: #64ffda;
+        }
+
+        .search-stat-label {
+            display: block;
+            color: #b0b0b0;
+            font-size: 10px;
+        }
+
+        @media (max-width: 1200px) {
+            .main-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .container {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>URL Generator for LeadGen</h1>
+        
+        <div class="main-grid">
+            <!-- CSV Upload & Keywords Section -->
+            <div class="form-section">
+                <h3>📊 Performance Data</h3>
+                
+                <div class="file-upload" id="fileUpload">
+                    <input type="file" id="csvFile" accept=".csv" style="display: none;">
+                    <div onclick="document.getElementById('csvFile').click()">
+                        📁 Drop CSV file here or click to upload
+                    </div>
+                </div>
+                
+                <div id="csvStatus" style="display: none;"></div>
+                
+                <div class="input-group">
+                    <label>Sort Keywords By:</label>
+                    <div class="performance-selector">
+                        <button class="btn performance-btn active" data-sort="clicks" onclick="setPerformanceSort('clicks')">
+                            👆 Clicks
+                        </button>
+                        <button class="btn performance-btn" data-sort="revenue" onclick="setPerformanceSort('revenue')">
+                            💰 Revenue
+                        </button>
+                        <button class="btn performance-btn" data-sort="rpc" onclick="setPerformanceSort('rpc')">
+                            📈 RPC
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <label for="keywordSearch">🔍 Search Keywords:</label>
+                    <input type="text" id="keywordSearch" placeholder="Type any word in Korean or English (e.g., 대출, 치과, dental)" oninput="searchKeywords()">
+                </div>
+                
+                <button class="btn btn-keywords" onclick="suggestKeywords()" disabled id="keywordBtn">
+                    🎯 Get Smart Keywords
+                </button>
+                
+                <div id="searchResults" class="keyword-suggestions" style="display: none;">
+                    <div class="search-tabs">
+                        <button class="btn search-tab active" data-sort="rpc" onclick="switchSearchSort('rpc')">
+                            📈 By RPC
+                        </button>
+                        <button class="btn search-tab" data-sort="revenue" onclick="switchSearchSort('revenue')">
+                            💰 By Revenue
+                        </button>
+                        <button class="btn search-tab" data-sort="clicks" onclick="switchSearchSort('clicks')">
+                            👆 By Clicks
+                        </button>
+                    </div>
+                    <div id="searchResultsList"></div>
+                </div>
+                
+                <div id="keywordSuggestions" class="keyword-suggestions" style="display: none;">
+                    <label>Top Performing Keywords (click to use):</label>
+                    <div id="keywordList"></div>
+                </div>
+            </div>
+            
+            <!-- URL Configuration Section -->
+            <div class="form-section">
+                <h3>📝 URL Configuration</h3>
+                
+                <div class="input-group">
+                    <label for="liveUrl">Live URL:</label>
+                    <input type="url" id="liveUrl" placeholder="https://example.com/your-page">
+                </div>
+                
+                <button class="btn btn-analyze" onclick="analyzeUrl()">
+                    🔍 Analyze & Get Headlines
+                </button>
+                
+                <div id="headlineSuggestions" class="headline-suggestions" style="display: none;">
+                    <label>Suggested Headlines (click to select):</label>
+                    <div id="suggestions"></div>
+                </div>
+                
+                <div class="input-group">
+                    <label for="headline">Selected Headline:</label>
+                    <input type="text" id="headline" placeholder="Your headline will appear here">
+                </div>
+                
+                <div class="input-group">
+                    <label for="segment">Segment:</label>
+                    <input type="text" id="segment" placeholder="e.g., rsoc.ar.answersconfidential.001">
+                </div>
+            </div>
+            
+            <!-- Keywords Section -->
+            <div class="form-section">
+                <h3>🎯 Keywords (Force Keys)</h3>
+                
+                <div class="input-group">
+                    <label for="forceKeyA">Force Key A:</label>
+                    <input type="text" id="forceKeyA" placeholder="First keyword">
+                </div>
+                
+                <div class="input-group">
+                    <label for="forceKeyB">Force Key B:</label>
+                    <input type="text" id="forceKeyB" placeholder="Second keyword">
+                </div>
+                
+                <div class="input-group">
+                    <label for="forceKeyC">Force Key C:</label>
+                    <input type="text" id="forceKeyC" placeholder="Third keyword">
+                </div>
+                
+                <div class="input-group">
+                    <label for="forceKeyD">Force Key D:</label>
+                    <input type="text" id="forceKeyD" placeholder="Fourth keyword">
+                </div>
+                
+                <div class="input-group">
+                    <label for="forceKeyE">Force Key E:</label>
+                    <input type="text" id="forceKeyE" placeholder="Fifth keyword">
+                </div>
+                
+                <div class="input-group">
+                    <label for="forceKeyF">Force Key F:</label>
+                    <input type="text" id="forceKeyF" placeholder="Sixth keyword">
+                </div>
+            </div>
+        </div>
+        
+        <div style="text-align: center; margin-bottom: 30px;">
+            <button class="btn" onclick="generateUrl()">⚡ Generate URL</button>
+            <button class="btn reset-btn" onclick="resetForm()">🔄 Reset All</button>
+        </div>
+        
+        <div id="output" class="output-section" style="display: none;">
+            <h3>📋 Generated URL</h3>
+            <div id="generatedUrl" class="generated-url"></div>
+            <button class="btn copy-btn" onclick="copyUrl()">📋 Copy URL</button>
+        </div>
+    </div>
+
+    <script>
+        let csvData = [];
+        let performanceSort = 'clicks';
+        let selectedHeadline = '';
+        let currentSearchSort = 'rpc';
+        let searchResultsData = [];
+
+        // CSV Upload handling
+        document.getElementById('csvFile').addEventListener('change', handleCSVUpload);
+        
+        const fileUpload = document.getElementById('fileUpload');
+        fileUpload.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileUpload.classList.add('dragover');
+        });
+        
+        fileUpload.addEventListener('dragleave', () => {
+            fileUpload.classList.remove('dragover');
+        });
+        
+        fileUpload.addEventListener('drop', (e) => {
+            e.preventDefault();
+            fileUpload.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0 && files[0].name.endsWith('.csv')) {
+                handleCSVFile(files[0]);
+            }
+        });
+
+        async function handleCSVUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                handleCSVFile(file);
+            }
+        }
+
+        async function handleCSVFile(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    parseCSVData(e.target.result);
+                    showCSVStatus(`✅ Loaded ${csvData.length} keywords from ${file.name}`);
+                    document.getElementById('keywordBtn').disabled = false;
+                } catch (error) {
+                    showCSVStatus(`❌ Error loading CSV: ${error.message}`, 'error');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function parseCSVData(csvText) {
+            const lines = csvText.split('\n');
+            
+            // Skip the first header row and use the second row for dates
+            // Line 0: NET_REVENUE,NET_REVENUE,RPC,RPC,CLICKS,CLICKS...
+            // Line 1: QUERY,28-May-25,29-May-25,30-May-25... (this is our real header)
+            const headers = lines[1].split(',').map(h => h.trim().replace(/\r$/, ''));
+            console.log("Using headers from line 1:", headers);
+            
+            csvData = [];
+            
+            // Start from line 2 (skip both header rows), skip Grand Total row
+            for (let i = 2; i < lines.length; i++) {
+                if (lines[i].trim() === '' || lines[i].includes('Grand Total')) continue;
+                
+                const values = lines[i].split(',').map(v => v.trim().replace(/\r$/, ''));
+                const row = {
+                    query: values[0] ? values[0].trim() : '',
+                    totalRevenue: 0,
+                    totalClicks: 0,
+                    trueRPC: 0,
+                    dailyConsistency: 0,
+                    performanceDays: 0
+                };
+                
+                let dailyRevenues = [];
+                let dailyClicks = [];
+                
+                // Parse the 7 days of data (columns 1-7 for revenue, 8-14 for RPC, 15-21 for clicks)
+                for (let j = 1; j < values.length && j < headers.length; j++) {
+                    const header = headers[j].toLowerCase();
+                    let value = values[j] || '';
+                    
+                    // Clean up value formatting - remove quotes, dollar signs, commas
+                    value = value.replace(/["$,]/g, '').trim();
+                    const numValue = parseFloat(value) || 0;
+                    
+                    // Revenue columns (28-May to 3-Jun dates)
+                    if (j >= 1 && j <= 7 && numValue > 0) {
+                        row.totalRevenue += numValue;
+                        dailyRevenues.push(numValue);
+                    }
+                    
+                    // Click columns (same dates, but later columns)
+                    if (j >= 15 && j <= 21 && numValue > 0) {
+                        row.totalClicks += numValue;
+                        dailyClicks.push(numValue);
+                    }
+                }
+                
+                // Calculate TRUE RPC: Total Revenue ÷ Total Clicks (weighted approach)
+                if (row.totalClicks > 0) {
+                    row.trueRPC = row.totalRevenue / row.totalClicks;
+                } else {
+                    row.trueRPC = 0;
+                }
+                
+                // Calculate consistency score (lower is more consistent)
+                if (dailyClicks.length > 1) {
+                    const avgDailyClicks = dailyClicks.reduce((a, b) => a + b, 0) / dailyClicks.length;
+                    const variance = dailyClicks.reduce((sum, clicks) => sum + Math.pow(clicks - avgDailyClicks, 2), 0) / dailyClicks.length;
+                    const stdDev = Math.sqrt(variance);
+                    row.dailyConsistency = avgDailyClicks > 0 ? (stdDev / avgDailyClicks) : 1;
+                } else {
+                    row.dailyConsistency = 0;
+                }
+                
+                row.performanceDays = Math.max(dailyRevenues.length, dailyClicks.length);
+                
+                // Only include keywords with actual performance data and valid names
+                if (row.query && row.query !== 'QUERY' && (row.totalClicks > 0 || row.totalRevenue > 0)) {
+                    csvData.push(row);
+                }
+            }
+            
+            console.log(`Successfully parsed ${csvData.length} keywords with performance data`);
+            console.log('Sample keywords:', csvData.slice(0, 3).map(k => ({ query: k.query, revenue: k.totalRevenue, clicks: k.totalClicks, rpc: k.trueRPC })));
+        }
+
+        function showCSVStatus(message, type = 'success') {
+            const statusDiv = document.getElementById('csvStatus');
+            statusDiv.innerHTML = `<div class="csv-status" style="background: ${type === 'error' ? 'rgba(244, 67, 54, 0.2)' : 'rgba(76, 175, 80, 0.2)'}; border-left-color: ${type === 'error' ? '#f44336' : '#4caf50'}">${message}</div>`;
+            statusDiv.style.display = 'block';
+        }
+
+        function setPerformanceSort(sortType) {
+            performanceSort = sortType;
+            document.querySelectorAll('.performance-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`[data-sort="${sortType}"]`).classList.add('active');
+        }
+
+        function searchKeywords() {
+            const searchTerm = document.getElementById('keywordSearch').value.trim();
+            const searchResultsDiv = document.getElementById('searchResults');
+            const searchResultsList = document.getElementById('searchResultsList');
+            
+            if (!searchTerm) {
+                searchResultsDiv.style.display = 'none';
+                return;
+            }
+            
+            if (csvData.length === 0) {
+                searchResultsList.innerHTML = '<div style="text-align: center; padding: 20px; color: #ff6b6b;">Please upload a CSV file first</div>';
+                searchResultsDiv.style.display = 'block';
+                return;
+            }
+            
+            console.log(`Starting search for: "${searchTerm}"`);
+            console.log(`Total keywords in csvData: ${csvData.length}`);
+            
+            // STRICT search - only keywords that actually contain the search term
+            const searchTermLower = searchTerm.toLowerCase();
+            
+            searchResultsData = [];
+            
+            for (let i = 0; i < csvData.length; i++) {
+                const keyword = csvData[i];
+                const keywordLower = keyword.query.toLowerCase();
+                
+                if (keywordLower.includes(searchTermLower)) {
+                    searchResultsData.push(keyword);
+                }
+            }
+            
+            console.log(`STRICT search found ${searchResultsData.length} keywords containing "${searchTerm}"`);
+            
+            // Debug: Show first 5 matches to verify they actually contain the search term
+            console.log('First 5 matches:');
+            for (let i = 0; i < Math.min(5, searchResultsData.length); i++) {
+                const kw = searchResultsData[i];
+                console.log(`${i+1}. "${kw.query}" (contains "${searchTerm}"? ${kw.query.toLowerCase().includes(searchTermLower)})`);
+            }
+            
+            if (searchResultsData.length === 0) {
+                searchResultsList.innerHTML = `<div style="text-align: center; padding: 20px; color: #ffa726;">No keywords found containing "${searchTerm}"<br><small>Search is case-insensitive</small></div>`;
+                searchResultsDiv.style.display = 'block';
+                return;
+            }
+            
+            displaySearchResults();
+            searchResultsDiv.style.display = 'block';
+        }
+
+        function switchSearchSort(sortType) {
+            currentSearchSort = sortType;
+            document.querySelectorAll('.search-tab').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`[data-sort="${sortType}"]`).classList.add('active');
+            displaySearchResults();
+        }
+
+        function displaySearchResults() {
+            if (searchResultsData.length === 0) return;
+            
+            const searchResultsList = document.getElementById('searchResultsList');
+            
+            // Sort results based on current sort type - PRIORITIZE TOP PERFORMERS
+            const sortedResults = [...searchResultsData].sort((a, b) => {
+                switch (currentSearchSort) {
+                    case 'rpc':
+                        // Sort by True RPC - HIGHEST first
+                        return (b.trueRPC || 0) - (a.trueRPC || 0);
+                    case 'revenue':
+                        // Sort by Total Revenue - HIGHEST first  
+                        return (b.totalRevenue || 0) - (a.totalRevenue || 0);
+                    case 'clicks':
+                        // Sort by Total Clicks - HIGHEST first
+                        return (b.totalClicks || 0) - (a.totalClicks || 0);
+                    default:
+                        return (b.trueRPC || 0) - (a.trueRPC || 0); // Default to RPC
+                }
+            });
+            
+            searchResultsList.innerHTML = '';
+            
+            // Show top 20 results (increased from 15)
+            const topResults = sortedResults.slice(0, 20);
+            
+            topResults.forEach((keyword, index) => {
+                const resultDiv = document.createElement('div');
+                resultDiv.className = 'search-result-item';
+                
+                // Add consistency indicator
+                let consistencyIcon = '';
+                if (keyword.dailyConsistency <= 0.25) {
+                    consistencyIcon = '🟢'; // Very consistent
+                } else if (keyword.dailyConsistency <= 0.5) {
+                    consistencyIcon = '🟡'; // Moderately consistent  
+                } else {
+                    consistencyIcon = '🔴'; // High volatility
+                }
+                
+                // Add ranking number
+                const ranking = index + 1;
+                
+                resultDiv.innerHTML = `
+                    <div class="search-keyword">
+                        <span style="color: #64ffda; font-weight: bold; margin-right: 8px;">#${ranking}</span>
+                        ${consistencyIcon} ${keyword.query}
+                    </div>
+                    <div class="search-stats">
+                        <div class="search-stat">
+                            <span class="search-stat-value">$${(keyword.trueRPC || 0).toFixed(3)}</span>
+                            <span class="search-stat-label">True RPC</span>
+                        </div>
+                        <div class="search-stat">
+                            <span class="search-stat-value">$${(keyword.totalRevenue || 0).toFixed(2)}</span>
+                            <span class="search-stat-label">7-Day Rev</span>
+                        </div>
+                        <div class="search-stat">
+                            <span class="search-stat-value">${keyword.totalClicks || 0}</span>
+                            <span class="search-stat-label">7-Day Clicks</span>
+                        </div>
+                    </div>
+                `;
+                resultDiv.onclick = () => selectSearchKeyword(keyword.query, resultDiv);
+                searchResultsList.appendChild(resultDiv);
+            });
+            
+            // Show summary
+            const summaryDiv = document.createElement('div');
+            summaryDiv.style.cssText = 'text-align: center; padding: 15px; color: #64ffda; font-size: 14px; border-top: 1px solid rgba(255,255,255,0.2); margin-top: 10px;';
+            summaryDiv.innerHTML = `📊 Showing top ${topResults.length} of ${sortedResults.length} matching keywords sorted by ${currentSearchSort.toUpperCase()}`;
+            searchResultsList.appendChild(summaryDiv);
+        }
+
+        function selectSearchKeyword(keyword, element) {
+            // Remove previous selection
+            document.querySelectorAll('.search-result-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            
+            // Select current item
+            element.classList.add('selected');
+            
+            // Auto-fill next available Force Key
+            selectKeywordForForceKey(keyword);
+        }
+
+        async function suggestKeywords() {
+            if (csvData.length === 0) {
+                alert('Please upload a CSV file first');
+                return;
+            }
+
+            const liveUrl = document.getElementById('liveUrl').value.trim();
+            if (!liveUrl) {
+                alert('Please enter a Live URL first to get contextual keyword suggestions');
+                return;
+            }
+
+            const keywordList = document.getElementById('keywordList');
+            const keywordSuggestionsDiv = document.getElementById('keywordSuggestions');
+            
+            // Show loading
+            keywordList.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <div>Analyzing keywords...</div>
+                </div>
+            `;
+            keywordSuggestionsDiv.style.display = 'block';
+
+            try {
+                // Get relevant keywords based on URL context and performance
+                const relevantKeywords = getRelevantKeywords(liveUrl);
+                
+                keywordList.innerHTML = '';
+                relevantKeywords.slice(0, 10).forEach((keyword, index) => {
+                    const keywordDiv = document.createElement('div');
+                    keywordDiv.className = 'suggestion-item';
+                    keywordDiv.innerHTML = `
+                        <div class="keyword-item">
+                            <span>${keyword.query}</span>
+                            <span class="keyword-stats">
+                                💰$${(keyword.totalRevenue || 0).toFixed(2)} | 
+                                👆${keyword.totalClicks || 0} | 
+                                📈$${(keyword.trueRPC || 0).toFixed(3)}
+                            </span>
+                        </div>
+                    `;
+                    keywordDiv.onclick = () => selectKeywordForForceKey(keyword.query);
+                    keywordList.appendChild(keywordDiv);
+                });
+                
+            } catch (error) {
+                keywordList.innerHTML = `
+                    <div style="color: #ff6b6b; text-align: center; padding: 20px;">
+                        Error processing keywords: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        function getRelevantKeywords(url) {
+            // Extract URL context
+            const urlLower = url.toLowerCase();
+            const contextKeywords = [];
+            
+            // Add context-based filtering
+            if (urlLower.includes('loan') || urlLower.includes('finance') || urlLower.includes('credit')) {
+                contextKeywords.push('loan', 'finance', 'credit', 'money', 'cash', 'debt');
+            } else if (urlLower.includes('insurance')) {
+                contextKeywords.push('insurance', 'coverage', 'protect', 'policy');
+            } else if (urlLower.includes('invest')) {
+                contextKeywords.push('invest', 'trading', 'stock', 'fund', 'portfolio');
+            }
+            
+            // Score keywords based on relevance and performance
+            const scoredKeywords = csvData.map(keyword => {
+                let relevanceScore = 0;
+                const queryLower = keyword.query.toLowerCase();
+                
+                // Context matching
+                contextKeywords.forEach(context => {
+                    if (queryLower.includes(context)) {
+                        relevanceScore += 5;
+                    }
+                });
+                
+                // Performance scoring
+                let performanceScore = 0;
+                switch (performanceSort) {
+                    case 'clicks':
+                        performanceScore = keyword.totalClicks;
+                        break;
+                    case 'revenue':
+                        performanceScore = keyword.totalRevenue * 10; // Scale for comparison
+                        break;
+                    case 'rpc':
+                        performanceScore = keyword.trueRPC * 100; // Scale for comparison
+                        break;
+                }
+                
+                return {
+                    ...keyword,
+                    score: relevanceScore + performanceScore
+                };
+            });
+            
+            // Sort by combined score
+            return scoredKeywords
+                .filter(k => k.score > 0 || k.totalClicks > 0 || k.totalRevenue > 0)
+                .sort((a, b) => b.score - a.score);
+        }
+
+        function selectKeywordForForceKey(keyword) {
+            // Find the first empty force key field
+            const forceKeys = ['forceKeyA', 'forceKeyB', 'forceKeyC', 'forceKeyD', 'forceKeyE', 'forceKeyF'];
+            
+            for (let key of forceKeys) {
+                const input = document.getElementById(key);
+                if (!input.value.trim()) {
+                    input.value = keyword;
+                    input.style.background = 'rgba(100, 255, 218, 0.2)';
+                    setTimeout(() => {
+                        input.style.background = 'rgba(255, 255, 255, 0.1)';
+                    }, 1000);
+                    break;
+                }
+            }
+        }
+
+        async function analyzeUrl() {
+            const liveUrl = document.getElementById('liveUrl').value.trim();
+            
+            if (!liveUrl) {
+                alert('Please enter a Live URL first');
+                return;
+            }
+
+            const suggestionsDiv = document.getElementById('suggestions');
+            const headlineSuggestionsDiv = document.getElementById('headlineSuggestions');
+            
+            // Show loading state
+            suggestionsDiv.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <div>Analyzing URL content...</div>
+                </div>
+            `;
+            headlineSuggestionsDiv.style.display = 'block';
+
+            try {
+                const headlines = await generateSmartHeadlines(liveUrl);
+                
+                suggestionsDiv.innerHTML = '';
+                headlines.forEach((headline, index) => {
+                    const suggestionDiv = document.createElement('div');
+                    suggestionDiv.className = 'suggestion-item';
+                    suggestionDiv.textContent = headline;
+                    suggestionDiv.onclick = () => selectHeadline(headline, suggestionDiv);
+                    suggestionsDiv.appendChild(suggestionDiv);
+                });
+                
+            } catch (error) {
+                suggestionsDiv.innerHTML = `
+                    <div style="color: #ff6b6b; text-align: center; padding: 20px;">
+                        Unable to analyze URL. Please check the URL and try again.
+                    </div>
+                `;
+            }
+        }
+
+        async function generateSmartHeadlines(url) {
+            // Simulate API call delay
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            // Extract domain and path for context
+            const urlObj = new URL(url);
+            const domain = urlObj.hostname;
+            const path = urlObj.pathname.toLowerCase();
+            const fullUrl = url.toLowerCase();
+            
+            // Extract key topics from URL path and parameters
+            const pathSegments = path.split('/').filter(segment => segment.length > 2);
+            const urlText = (path + ' ' + urlObj.search).toLowerCase();
+            
+            console.log('Analyzing URL for headlines:', { path, pathSegments, urlText });
+            
+            // Generate contextual headlines based on URL content
+            const headlines = [];
+            
+            // Disability/Accessibility themed
+            if (urlText.includes('disability') || urlText.includes('empowerment') || urlText.includes('accessible')) {
+                headlines.push(
+                    'Find comprehensive disability resources and support',
+                    'Empower your journey with disability assistance programs',
+                    'Access essential disability services and resources today'
+                );
+            }
+            // Financial/Loan themed  
+            else if (urlText.includes('loan') || urlText.includes('finance') || urlText.includes('credit') || urlText.includes('debt')) {
+                headlines.push(
+                    'Get instant approval for personal loans online',
+                    'Access same day funding with bad credit options',
+                    'Compare top rated personal loan offers today'
+                );
+            }
+            // Insurance themed
+            else if (urlText.includes('insurance') || urlText.includes('coverage') || urlText.includes('protect')) {
+                headlines.push(
+                    'Compare insurance quotes and save up to 40%',
+                    'Get instant insurance coverage in minutes',
+                    'Find affordable insurance plans that fit your budget'
+                );
+            }
+            // Investment/Trading themed
+            else if (urlText.includes('invest') || urlText.includes('trading') || urlText.includes('stock') || urlText.includes('fund')) {
+                headlines.push(
+                    'Start investing with zero commission trades',
+                    'Build wealth with expert investment guidance',
+                    'Get professional investment advice and grow your portfolio'
+                );
+            }
+            // Education themed
+            else if (urlText.includes('education') || urlText.includes('degree') || urlText.includes('course') || urlText.includes('learn')) {
+                headlines.push(
+                    'Earn your degree online with flexible schedules',
+                    'Advance your career with accredited online programs',
+                    'Get financial aid for online education and training'
+                );
+            }
+            // Health/Medical themed
+            else if (urlText.includes('health') || urlText.includes('medical') || urlText.includes('doctor') || urlText.includes('treatment')) {
+                headlines.push(
+                    'Find top-rated medical professionals near you',
+                    'Get expert health advice and treatment options',
+                    'Access affordable healthcare services in your area'
+                );
+            }
+            // Legal themed
+            else if (urlText.includes('legal') || urlText.includes('lawyer') || urlText.includes('attorney') || urlText.includes('law')) {
+                headlines.push(
+                    'Get expert legal advice from qualified attorneys',
+                    'Find experienced lawyers for your legal needs',
+                    'Access affordable legal services and consultations'
+                );
+            }
+            // Senior/Aging themed
+            else if (urlText.includes('senior') || urlText.includes('aging') || urlText.includes('elderly') || urlText.includes('retirement')) {
+                headlines.push(
+                    'Discover senior resources and support services',
+                    'Find comprehensive aging care and assistance programs',
+                    'Access senior benefits and retirement planning help'
+                );
+            }
+            // Real Estate themed
+            else if (urlText.includes('home') || urlText.includes('house') || urlText.includes('property') || urlText.includes('real-estate')) {
+                headlines.push(
+                    'Find your dream home with expert real estate help',
+                    'Get the best deals on homes in your area',
+                    'Access top-rated real estate agents and services'
+                );
+            }
+            // Try to extract specific topics from path segments
+            else {
+                // Look for meaningful words in the URL path
+                const topicWords = [];
+                pathSegments.forEach(segment => {
+                    // Clean up segment (remove common URL patterns)
+                    const cleaned = segment.replace(/-en-us$/, '').replace(/-/g, ' ');
+                    if (cleaned.length > 3 && !['general', 'www', 'com', 'org', 'net'].includes(cleaned)) {
+                        topicWords.push(cleaned);
+                    }
+                });
+                
+                if (topicWords.length > 0) {
+                    const mainTopic = topicWords[topicWords.length - 1]; // Usually the most specific topic
+                    headlines.push(
+                        `Discover comprehensive ${mainTopic} resources and solutions`,
+                        `Get expert ${mainTopic} advice and assistance today`,
+                        `Find top-rated ${mainTopic} services in your area`
+                    );
+                } else {
+                    // Generic fallback headlines
+                    headlines.push(
+                        'Discover amazing deals and exclusive offers',
+                        'Get expert solutions for your needs today',
+                        'Find the perfect match for your requirements'
+                    );
+                }
+            }
+            
+            console.log('Generated headlines:', headlines);
+            return headlines;
+        }
+
+        function selectHeadline(headline, element) {
+            // Remove previous selection
+            document.querySelectorAll('.suggestion-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            
+            // Select current item
+            element.classList.add('selected');
+            selectedHeadline = headline;
+            
+            // Update headline input
+            document.getElementById('headline').value = headline;
+        }
+
+        function generateUrl() {
+            const liveUrl = document.getElementById('liveUrl').value.trim();
+            const headline = document.getElementById('headline').value.trim();
+            const segment = document.getElementById('segment').value.trim();
+            const forceKeyA = document.getElementById('forceKeyA').value.trim();
+            const forceKeyB = document.getElementById('forceKeyB').value.trim();
+            const forceKeyC = document.getElementById('forceKeyC').value.trim();
+            const forceKeyD = document.getElementById('forceKeyD').value.trim();
+            const forceKeyE = document.getElementById('forceKeyE').value.trim();
+            const forceKeyF = document.getElementById('forceKeyF').value.trim();
+
+            if (!liveUrl || !headline || !segment) {
+                alert('Please fill in Live URL, Headline, and Segment fields');
+                return;
+            }
+
+            if (!forceKeyA || !forceKeyB || !forceKeyC || !forceKeyD || !forceKeyE || !forceKeyF) {
+                alert('Please fill in all 6 Force Keys (keywords)');
+                return;
+            }
+
+            // Build the URL with proper encoding
+            const params = new URLSearchParams();
+            params.append('forceKeyA', forceKeyA);
+            params.append('forceKeyB', forceKeyB);
+            params.append('forceKeyC', forceKeyC);
+            params.append('forceKeyD', forceKeyD);
+            params.append('forceKeyE', forceKeyE);
+            params.append('forceKeyF', forceKeyF);
+            params.append('segment', segment);
+            params.append('headline', headline);
+            params.append('s1paid', '{account.id}');
+            params.append('s1particle', headline);
+            params.append('s1pcid', '{campaign.id}');
+
+            const generatedUrl = `${liveUrl}?${params.toString()}`;
+            
+            // Display the generated URL
+            document.getElementById('generatedUrl').textContent = generatedUrl;
+            document.getElementById('output').style.display = 'block';
+            
+            // Scroll to output
+            document.getElementById('output').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function copyUrl() {
+            const urlText = document.getElementById('generatedUrl').textContent;
+            navigator.clipboard.writeText(urlText).then(() => {
+                const copyBtn = document.querySelector('.copy-btn');
+                const originalText = copyBtn.textContent;
+                copyBtn.textContent = '✅ Copied!';
+                copyBtn.style.background = 'linear-gradient(45deg, #4caf50, #66bb6a)';
+                
+                setTimeout(() => {
+                    copyBtn.textContent = originalText;
+                    copyBtn.style.background = 'linear-gradient(45deg, #4caf50, #66bb6a)';
+                }, 2000);
+            });
+        }
+
+        function resetForm() {
+            document.querySelectorAll('input').forEach(input => {
+                if (input.type !== 'file') input.value = '';
+            });
+            document.getElementById('headlineSuggestions').style.display = 'none';
+            document.getElementById('keywordSuggestions').style.display = 'none';
+            document.getElementById('searchResults').style.display = 'none';
+            document.getElementById('csvStatus').style.display = 'none';
+            document.getElementById('output').style.display = 'none';
+            document.getElementById('keywordBtn').disabled = true;
+            selectedHeadline = '';
+            csvData = [];
+            searchResultsData = [];
+        }
+
+        // Auto-resize textareas and add enter key shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && e.ctrlKey) {
+                generateUrl();
+            }
+        });
+    </script>
+</body>
+</html>
