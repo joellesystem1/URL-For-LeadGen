@@ -360,6 +360,32 @@
             font-size: 10px;
         }
 
+        .partner-result {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px;
+            margin-bottom: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .partner-result:hover {
+            border-color: #64ffda;
+            background: rgba(100, 255, 218, 0.1);
+        }
+
+        .partner-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .partner-segments {
+            font-size: 12px;
+            color: #64ffda;
+            font-family: monospace;
+        }
+
         @media (max-width: 1200px) {
             .main-grid {
                 grid-template-columns: 1fr 1fr;
@@ -471,6 +497,12 @@
                     <label for="segment">Segment:</label>
                     <input type="text" id="segment" placeholder="e.g., rsoc.ar.answersconfidential.001">
                 </div>
+                
+                <div class="input-group">
+                    <label for="partnerLookup">🔍 Partner Lookup:</label>
+                    <input type="text" id="partnerLookup" placeholder="Type partner name (e.g., InsightHivePro)" oninput="searchPartners()">
+                    <div id="partnerResults" style="display: none; margin-top: 10px;"></div>
+                </div>
             </div>
             
             <!-- Keywords Section -->
@@ -527,28 +559,150 @@
         let selectedHeadline = '';
         let currentSearchSort = 'rpc';
         let searchResultsData = [];
+        let segmentData = [];
 
-        // CSV Upload handling
-        document.getElementById('csvFile').addEventListener('change', handleCSVUpload);
-        
-        const fileUpload = document.getElementById('fileUpload');
-        fileUpload.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            fileUpload.classList.add('dragover');
+        // Initialize everything when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSegmentData();
+            setupEventListeners();
         });
-        
-        fileUpload.addEventListener('dragleave', () => {
-            fileUpload.classList.remove('dragover');
-        });
-        
-        fileUpload.addEventListener('drop', (e) => {
-            e.preventDefault();
-            fileUpload.classList.remove('dragover');
-            const files = e.dataTransfer.files;
-            if (files.length > 0 && files[0].name.endsWith('.csv')) {
-                handleCSVFile(files[0]);
+
+        function setupEventListeners() {
+            // CSV Upload handling
+            document.getElementById('csvFile').addEventListener('change', handleCSVUpload);
+            
+            const fileUpload = document.getElementById('fileUpload');
+            fileUpload.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                fileUpload.classList.add('dragover');
+            });
+            
+            fileUpload.addEventListener('dragleave', () => {
+                fileUpload.classList.remove('dragover');
+            });
+            
+            fileUpload.addEventListener('drop', (e) => {
+                e.preventDefault();
+                fileUpload.classList.remove('dragover');
+                const files = e.dataTransfer.files;
+                if (files.length > 0 && files[0].name.endsWith('.csv')) {
+                    handleCSVFile(files[0]);
+                }
+            });
+
+            // Auto-resize textareas and add enter key shortcuts
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && e.ctrlKey) {
+                    generateUrl();
+                }
+            });
+        }
+
+        async function loadSegmentData() {
+            try {
+                const response = await window.fs.readFile('RSoC Segments 6.10.csv', { encoding: 'utf8' });
+                parseSegmentData(response);
+            } catch (error) {
+                console.log('Segment CSV not found, partner lookup disabled');
             }
-        });
+        }
+
+        function parseSegmentData(csvText) {
+            const lines = csvText.split('\n');
+            segmentData = [];
+            
+            // Skip header row
+            for (let i = 1; i < lines.length; i++) {
+                if (lines[i].trim() === '') continue;
+                
+                const values = lines[i].split(',');
+                if (values.length >= 2) {
+                    const partner = values[0] ? values[0].trim().replace(/["\t]/g, '') : '';
+                    const segment = values[1] ? values[1].trim().replace(/["\t]/g, '') : '';
+                    
+                    if (partner && segment) {
+                        segmentData.push({
+                            partner: partner,
+                            segment: segment
+                        });
+                    }
+                }
+            }
+            
+            console.log(`Loaded ${segmentData.length} partner segments`);
+        }
+
+        function searchPartners() {
+            const searchTerm = document.getElementById('partnerLookup').value.trim();
+            const resultsDiv = document.getElementById('partnerResults');
+            
+            if (!searchTerm) {
+                resultsDiv.style.display = 'none';
+                return;
+            }
+            
+            if (segmentData.length === 0) {
+                resultsDiv.innerHTML = '<div style="color: #ff6b6b; padding: 10px;">Segment data not loaded</div>';
+                resultsDiv.style.display = 'block';
+                return;
+            }
+            
+            const searchTermLower = searchTerm.toLowerCase();
+            const matches = segmentData.filter(item => 
+                item.partner.toLowerCase().includes(searchTermLower)
+            );
+            
+            if (matches.length === 0) {
+                resultsDiv.innerHTML = '<div style="color: #ffa726; padding: 10px;">No partners found</div>';
+                resultsDiv.style.display = 'block';
+                return;
+            }
+            
+            resultsDiv.innerHTML = '';
+            matches.slice(0, 10).forEach(match => {
+                const resultDiv = document.createElement('div');
+                resultDiv.className = 'partner-result';
+                
+                // Extract clean partner name for display
+                const cleanPartnerName = match.partner
+                    .replace(/Agency_RSoC_\w+_/g, '')
+                    .replace(/_OF$/g, '')
+                    .replace(/\.com/g, '');
+                
+                // Format segments (split by dash and show separately)
+                let formattedSegments = match.segment;
+                if (match.segment.includes('-')) {
+                    const parts = match.segment.split('-');
+                    if (parts.length === 2) {
+                        const baseSegment = match.segment.substring(0, match.segment.lastIndexOf('.') + 1);
+                        formattedSegments = `${baseSegment}${parts[0].split('.').pop()}, ${baseSegment}${parts[1]}`;
+                    }
+                }
+                
+                resultDiv.innerHTML = `
+                    <div class="partner-name">${cleanPartnerName}</div>
+                    <div class="partner-segments">${formattedSegments}</div>
+                `;
+                
+                resultDiv.onclick = () => selectPartnerSegment(formattedSegments);
+                resultsDiv.appendChild(resultDiv);
+            });
+            
+            resultsDiv.style.display = 'block';
+        }
+
+        function selectPartnerSegment(segments) {
+            document.getElementById('segment').value = segments.split(', ')[0]; // Use first segment
+            document.getElementById('partnerResults').style.display = 'none';
+            document.getElementById('partnerLookup').value = '';
+            
+            // Highlight the segment field briefly
+            const segmentField = document.getElementById('segment');
+            segmentField.style.background = 'rgba(100, 255, 218, 0.2)';
+            setTimeout(() => {
+                segmentField.style.background = 'rgba(255, 255, 255, 0.1)';
+            }, 1000);
+        }
 
         async function handleCSVUpload(event) {
             const file = event.target.files[0];
@@ -575,8 +729,6 @@
             const lines = csvText.split('\n');
             
             // Skip the first header row and use the second row for dates
-            // Line 0: NET_REVENUE,NET_REVENUE,RPC,RPC,CLICKS,CLICKS...
-            // Line 1: QUERY,28-May-25,29-May-25,30-May-25... (this is our real header)
             const headers = lines[1].split(',').map(h => h.trim().replace(/\r$/, ''));
             console.log("Using headers from line 1:", headers);
             
@@ -586,7 +738,25 @@
             for (let i = 2; i < lines.length; i++) {
                 if (lines[i].trim() === '' || lines[i].includes('Grand Total')) continue;
                 
-                const values = lines[i].split(',').map(v => v.trim().replace(/\r$/, ''));
+                // Better CSV parsing to handle commas within quoted values
+                const values = [];
+                let currentValue = '';
+                let insideQuotes = false;
+                let chars = lines[i] + ','; // Add comma at end to process last value
+                
+                for (let j = 0; j < chars.length; j++) {
+                    const char = chars[j];
+                    
+                    if (char === '"') {
+                        insideQuotes = !insideQuotes;
+                    } else if (char === ',' && !insideQuotes) {
+                        values.push(currentValue.trim().replace(/^"|"$/g, '').replace(/\r$/, ''));
+                        currentValue = '';
+                    } else {
+                        currentValue += char;
+                    }
+                }
+                
                 const row = {
                     query: values[0] ? values[0].trim() : '',
                     totalRevenue: 0,
@@ -599,22 +769,21 @@
                 let dailyRevenues = [];
                 let dailyClicks = [];
                 
-                // Parse the 7 days of data (columns 1-7 for revenue, 8-14 for RPC, 15-21 for clicks)
+                // Parse the 7 days of data (columns 1-7 for revenue, 15-21 for clicks)
                 for (let j = 1; j < values.length && j < headers.length; j++) {
-                    const header = headers[j].toLowerCase();
                     let value = values[j] || '';
                     
                     // Clean up value formatting - remove quotes, dollar signs, commas
-                    value = value.replace(/["$,]/g, '').trim();
+                    value = value.replace(/["$,\s]/g, '').trim();
                     const numValue = parseFloat(value) || 0;
                     
-                    // Revenue columns (28-May to 3-Jun dates)
+                    // Revenue columns (3-Jun to 9-Jun dates) - columns 1-7
                     if (j >= 1 && j <= 7 && numValue > 0) {
                         row.totalRevenue += numValue;
                         dailyRevenues.push(numValue);
                     }
                     
-                    // Click columns (same dates, but later columns)
+                    // Click columns (same dates, but later columns) - columns 15-21
                     if (j >= 15 && j <= 21 && numValue > 0) {
                         row.totalClicks += numValue;
                         dailyClicks.push(numValue);
@@ -647,7 +816,7 @@
             }
             
             console.log(`Successfully parsed ${csvData.length} keywords with performance data`);
-            console.log('Sample keywords:', csvData.slice(0, 3).map(k => ({ query: k.query, revenue: k.totalRevenue, clicks: k.totalClicks, rpc: k.trueRPC })));
+            console.log('Sample keywords:', csvData.slice(0, 5).map(k => ({ query: k.query, revenue: k.totalRevenue, clicks: k.totalClicks, rpc: k.trueRPC })));
         }
 
         function showCSVStatus(message, type = 'success') {
@@ -683,8 +852,8 @@
             console.log(`Starting search for: "${searchTerm}"`);
             console.log(`Total keywords in csvData: ${csvData.length}`);
             
-            // STRICT search - only keywords that actually contain the search term
-            const searchTermLower = searchTerm.toLowerCase();
+            // FLEXIBLE search - handle multi-word searches and variations
+            const searchTerms = searchTerm.toLowerCase().split(/\s+/); // Split by spaces
             
             searchResultsData = [];
             
@@ -692,22 +861,25 @@
                 const keyword = csvData[i];
                 const keywordLower = keyword.query.toLowerCase();
                 
-                if (keywordLower.includes(searchTermLower)) {
+                // Check if ALL search terms are found in the keyword
+                const allTermsFound = searchTerms.every(term => keywordLower.includes(term));
+                
+                if (allTermsFound) {
                     searchResultsData.push(keyword);
                 }
             }
             
-            console.log(`STRICT search found ${searchResultsData.length} keywords containing "${searchTerm}"`);
+            console.log(`FLEXIBLE search found ${searchResultsData.length} keywords containing all terms: ${searchTerms.join(', ')}`);
             
-            // Debug: Show first 5 matches to verify they actually contain the search term
+            // Debug: Show first 5 matches to verify they contain the search terms
             console.log('First 5 matches:');
             for (let i = 0; i < Math.min(5, searchResultsData.length); i++) {
                 const kw = searchResultsData[i];
-                console.log(`${i+1}. "${kw.query}" (contains "${searchTerm}"? ${kw.query.toLowerCase().includes(searchTermLower)})`);
+                console.log(`${i+1}. "${kw.query}"`);
             }
             
             if (searchResultsData.length === 0) {
-                searchResultsList.innerHTML = `<div style="text-align: center; padding: 20px; color: #ffa726;">No keywords found containing "${searchTerm}"<br><small>Search is case-insensitive</small></div>`;
+                searchResultsList.innerHTML = `<div style="text-align: center; padding: 20px; color: #ffa726;">No keywords found containing "${searchTerm}"<br><small>Try searching for individual words like "hair" or "transplant"</small></div>`;
                 searchResultsDiv.style.display = 'block';
                 return;
             }
@@ -994,111 +1166,88 @@
             
             console.log('Analyzing URL for headlines:', { path, pathSegments, urlText });
             
-            // Generate contextual headlines based on URL content
-            const headlines = [];
+            // Extract main keyword from URL path - focus on the most specific topic
+            let mainKeyword = '';
+            let isCompoundTerm = false;
             
-            // Disability/Accessibility themed
-            if (urlText.includes('disability') || urlText.includes('empowerment') || urlText.includes('accessible')) {
-                headlines.push(
-                    'Find comprehensive disability resources and support',
-                    'Empower your journey with disability assistance programs',
-                    'Access essential disability services and resources today'
-                );
-            }
-            // Financial/Loan themed  
-            else if (urlText.includes('loan') || urlText.includes('finance') || urlText.includes('credit') || urlText.includes('debt')) {
-                headlines.push(
-                    'Get instant approval for personal loans online',
-                    'Access same day funding with bad credit options',
-                    'Compare top rated personal loan offers today'
-                );
-            }
-            // Insurance themed
-            else if (urlText.includes('insurance') || urlText.includes('coverage') || urlText.includes('protect')) {
-                headlines.push(
-                    'Compare insurance quotes and save up to 40%',
-                    'Get instant insurance coverage in minutes',
-                    'Find affordable insurance plans that fit your budget'
-                );
-            }
-            // Investment/Trading themed
-            else if (urlText.includes('invest') || urlText.includes('trading') || urlText.includes('stock') || urlText.includes('fund')) {
-                headlines.push(
-                    'Start investing with zero commission trades',
-                    'Build wealth with expert investment guidance',
-                    'Get professional investment advice and grow your portfolio'
-                );
-            }
-            // Education themed
-            else if (urlText.includes('education') || urlText.includes('degree') || urlText.includes('course') || urlText.includes('learn')) {
-                headlines.push(
-                    'Earn your degree online with flexible schedules',
-                    'Advance your career with accredited online programs',
-                    'Get financial aid for online education and training'
-                );
-            }
-            // Health/Medical themed
-            else if (urlText.includes('health') || urlText.includes('medical') || urlText.includes('doctor') || urlText.includes('treatment')) {
-                headlines.push(
-                    'Find top-rated medical professionals near you',
-                    'Get expert health advice and treatment options',
-                    'Access affordable healthcare services in your area'
-                );
-            }
-            // Legal themed
-            else if (urlText.includes('legal') || urlText.includes('lawyer') || urlText.includes('attorney') || urlText.includes('law')) {
-                headlines.push(
-                    'Get expert legal advice from qualified attorneys',
-                    'Find experienced lawyers for your legal needs',
-                    'Access affordable legal services and consultations'
-                );
-            }
-            // Senior/Aging themed
-            else if (urlText.includes('senior') || urlText.includes('aging') || urlText.includes('elderly') || urlText.includes('retirement')) {
-                headlines.push(
-                    'Discover senior resources and support services',
-                    'Find comprehensive aging care and assistance programs',
-                    'Access senior benefits and retirement planning help'
-                );
-            }
-            // Real Estate themed
-            else if (urlText.includes('home') || urlText.includes('house') || urlText.includes('property') || urlText.includes('real-estate')) {
-                headlines.push(
-                    'Find your dream home with expert real estate help',
-                    'Get the best deals on homes in your area',
-                    'Access top-rated real estate agents and services'
-                );
-            }
-            // Try to extract specific topics from path segments
-            else {
-                // Look for meaningful words in the URL path
-                const topicWords = [];
-                pathSegments.forEach(segment => {
-                    // Clean up segment (remove common URL patterns)
-                    const cleaned = segment.replace(/-en-us$/, '').replace(/-/g, ' ');
-                    if (cleaned.length > 3 && !['general', 'www', 'com', 'org', 'net'].includes(cleaned)) {
-                        topicWords.push(cleaned);
-                    }
-                });
-                
-                if (topicWords.length > 0) {
-                    const mainTopic = topicWords[topicWords.length - 1]; // Usually the most specific topic
-                    headlines.push(
-                        `Discover comprehensive ${mainTopic} resources and solutions`,
-                        `Get expert ${mainTopic} advice and assistance today`,
-                        `Find top-rated ${mainTopic} services in your area`
-                    );
-                } else {
-                    // Generic fallback headlines
-                    headlines.push(
-                        'Discover amazing deals and exclusive offers',
-                        'Get expert solutions for your needs today',
-                        'Find the perfect match for your requirements'
-                    );
+            // Look for compound terms first (like "bipolar-assessment", "weight-management")
+            const compoundTerms = [
+                'bipolar-assessment', 'weight-management', 'diabetes-management', 'anxiety-treatment',
+                'depression-screening', 'adhd-assessment', 'autism-screening', 'ptsd-treatment',
+                'addiction-recovery', 'mental-health', 'cognitive-assessment', 'behavioral-therapy',
+                'pain-management', 'sleep-disorders', 'eating-disorders', 'substance-abuse',
+                'dental-implants', 'hair-transplant', 'laser-surgery', 'plastic-surgery',
+                'clinical-trials', 'medical-research', 'health-screening', 'diagnostic-testing'
+            ];
+            
+            // Check for compound terms in URL
+            for (let term of compoundTerms) {
+                if (urlText.includes(term)) {
+                    mainKeyword = term.replace(/-/g, ' ');
+                    isCompoundTerm = true;
+                    break;
                 }
             }
             
-            console.log('Generated headlines:', headlines);
+            // If no compound term found, look for individual keywords
+            if (!mainKeyword) {
+                const specificKeywords = [
+                    'bipolar', 'depression', 'anxiety', 'adhd', 'autism', 'ptsd', 'ocd',
+                    'ozempic', 'diabetes', 'weight', 'obesity', 'medication', 'therapy',
+                    'dental', 'implants', 'dentures', 'teeth', 'braces', 'veneers',
+                    'hair', 'transplant', 'regrowth', 'baldness', 'restoration',
+                    'medicare', 'medicaid', 'insurance', 'coverage', 'benefits',
+                    'loan', 'mortgage', 'refinance', 'credit', 'finance', 'debt',
+                    'legal', 'attorney', 'lawyer', 'mesothelioma', 'asbestos',
+                    'rehab', 'addiction', 'recovery', 'treatment', 'counseling',
+                    'senior', 'retirement', 'disability', 'wheelchair', 'mobility'
+                ];
+                
+                const urlParts = urlText.replace(/[^a-z0-9\s\-]/g, ' ').split(/[\s\-]+/);
+                
+                for (let keyword of specificKeywords) {
+                    if (urlParts.includes(keyword)) {
+                        mainKeyword = keyword;
+                        break;
+                    }
+                }
+            }
+            
+            console.log('Extracted main keyword:', mainKeyword, 'isCompound:', isCompoundTerm);
+            
+            // Generate intellectual/educational headlines
+            const headlines = [];
+            
+            if (mainKeyword) {
+                const capitalizedKeyword = mainKeyword.split(' ').map(word => 
+                    word.charAt(0).toUpperCase() + word.slice(1)
+                ).join(' ');
+                
+                if (isCompoundTerm || mainKeyword.includes(' ')) {
+                    // For compound terms like "Bipolar Assessment"
+                    headlines.push(
+                        `Understanding ${capitalizedKeyword}`,
+                        `${capitalizedKeyword} Information Guide`,
+                        `Comprehensive ${capitalizedKeyword} Overview`
+                    );
+                } else {
+                    // For single terms like "Bipolar"
+                    headlines.push(
+                        `Understanding ${capitalizedKeyword} Conditions`,
+                        `${capitalizedKeyword} Information Resources`,
+                        `Comprehensive ${capitalizedKeyword} Guide`
+                    );
+                }
+            } else {
+                // Fallback intellectual headlines
+                headlines.push(
+                    'Understanding Medical Conditions',
+                    'Comprehensive Health Information',
+                    'Educational Resource Guide'
+                );
+            }
+            
+            console.log('Generated intellectual headlines:', headlines);
             return headlines;
         }
 
@@ -1190,13 +1339,6 @@
             csvData = [];
             searchResultsData = [];
         }
-
-        // Auto-resize textareas and add enter key shortcuts
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter' && e.ctrlKey) {
-                generateUrl();
-            }
-        });
     </script>
 </body>
 </html>
